@@ -10,7 +10,7 @@ services:
     volumes:
       - db-data:/var/opt/mssql
     healthcheck: 
-      test: ["CMD", "/opt/mss-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
       interval: 30s      # Revisa cada 30 segundos
       timeout: 10s
       retries: 20        # Permite 20 reintentos
