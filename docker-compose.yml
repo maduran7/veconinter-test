@@ -9,12 +9,12 @@ services:
       - "1433:1433"
     volumes:
       - db-data:/var/opt/mssql
-    healthcheck: # <-- REEMPLAZA ESTE BLOQUE
+    healthcheck: 
       test: ["CMD", "/opt/mss-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
       interval: 30s      # Revisa cada 30 segundos
       timeout: 10s
       retries: 20        # Permite 20 reintentos
-      start_period: 120s # Le da 2 minutos completos de gracia antes de empezar a fallar
+      start_period: 320s # Le da  minutos completos de gracia antes de empezar a fallar
 
   api:
     build:
