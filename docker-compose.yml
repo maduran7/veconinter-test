@@ -9,12 +9,12 @@ services:
       - "1433:1433"
     volumes:
       - db-data:/var/opt/mssql
-    healthcheck: 
-      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
-      interval: 30s      # Revisa cada 30 segundos
-      timeout: 10s
-      retries: 20        # Permite 20 reintentos
-      start_period: 320s # Le da  minutos completos de gracia antes de empezar a fallar
+    healthcheck:
+    test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
+    interval: 30s
+    timeout: 20s
+    retries: 25
+    start_period: 300s 
 
   api:
     build:
@@ -27,8 +27,6 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:7128
       - ASPNETCORE_ENVIRONMENT=Development
-      # --- LA CORRECCIÓN FINAL ---
-      # Activar modo de compatibilidad de red para intentar evitar la redirección a HTTPS
       - DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
       - ConnectionStrings__DefaultConnection=Server=db;Database=master;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True
     depends_on:
