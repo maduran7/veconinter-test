@@ -11,10 +11,10 @@ services:
       - db-data:/var/opt/mssql
     healthcheck:
       test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
-      interval: 15s
+      interval: 20s      # Revisa cada 20 segundos
       timeout: 10s
-      retries: 10
-      start_period: 30s
+      retries: 15        # Permite 15 reintentos
+      start_period: 60s  # Le da 1 minuto completo de gracia antes de empezar a contar fallos
 
   api:
     build:
