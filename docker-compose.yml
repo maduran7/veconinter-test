@@ -26,8 +26,9 @@ services:
       - "5001:7128"
     environment:
       - ASPNETCORE_URLS=http://+:7128
-      - ASPNETCORE_HTTPS_PORT: ""
+      - ASPNETCORE_HTTPS_PORT="" # <-- ESTA LÍNEA AHORA TIENE EL GUIÓN CORRECTO
       - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
       - ConnectionStrings__DefaultConnection=Server=db;Database=master;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True
     depends_on:
       db:
