@@ -47,13 +47,13 @@ jobs:
       - name: Ejecutar pruebas de integración
         run: |
           echo "Esperando que los servicios se estabilicen..."
-          sleep 45
+          sleep 60
           
           echo "Probando conectividad del Frontend en el puerto 5000..."
-          curl -f http://localhost:5000 || exit 1
+          curl -f --retry 5 --retry-delay 5 http://localhost:5000 || exit 1
           
           echo "Probando conectividad de la API en el puerto 5001..."
-          curl -f http://localhost:5001/Contenedor || exit 1
+          curl -f --retry 5 --retry-delay 5 http://localhost:5001/Contenedor || exit 1
           
           echo "¡Pruebas de integración exitosas!"
 

@@ -22,12 +22,15 @@ services:
       dockerfile: Dockerfile
     container_name: api_service
     ports:
+      # Expone el puerto del frontend (5000) y el de la API (5001)
       - "5000:8080"
       - "5001:7128"
     environment:
+      # Forzar a la API a escuchar SOLAMENTE en HTTP en el puerto que el frontend busca
       - ASPNETCORE_URLS=http://+:7128
-      - ASPNETCORE_HTTPS_PORT="" # <-- ESTA LÍNEA AHORA TIENE EL GUIÓN CORRECTO
       - ASPNETCORE_ENVIRONMENT=Development
+      # --- LA CORRECCIÓN CLAVE PARA EL ERROR DE SSL ---
+      # Activa un modo de compatibilidad de red para evitar la redirección a HTTPS
       - DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
       - ConnectionStrings__DefaultConnection=Server=db;Database=master;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True
     depends_on:
@@ -44,6 +47,7 @@ services:
     build:
       context: ./Frontend-Contenedores
       dockerfile: Dockerfile
+    # Forzar al frontend a usar la red de la API. 'localhost' ahora apuntará a la API.
     network_mode: "service:api"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
