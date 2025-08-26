@@ -1,0 +1,56 @@
+services:
+  db:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: sql_server_db
+    environment:
+      SA_PASSWORD: "${DB_PASSWORD}"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - db-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  api:
+    build:
+      context: ./APIContainer
+      dockerfile: Dockerfile
+    container_name: api_service
+    ports:
+      - "5000:8080"
+      - "5001:7128"
+    environment:
+      - ASPNETCORE_URLS=http://+:7128
+      - ASPNETCORE_ENVIRONMENT=Development
+      # --- LA CORRECCIÓN FINAL ---
+      # Activar modo de compatibilidad de red para intentar evitar la redirección a HTTPS
+      - DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
+      - ConnectionStrings__DefaultConnection=Server=db;Database=master;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7128/Contenedor || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./Frontend-Contenedores
+      dockerfile: Dockerfile
+    network_mode: "service:api"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  db-data:

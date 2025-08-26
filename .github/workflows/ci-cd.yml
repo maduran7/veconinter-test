@@ -1,0 +1,89 @@
+name: CI/CD Pipeline para QA y Producción
+
+# Disparadores del workflow
+on:
+  push:
+    branches:
+      - main     # Para despliegue a Producción
+      - develop  # Para despliegue a QA
+  pull_request:
+    branches:
+      - develop  # También ejecuta en PRs hacia develop (QA)
+
+jobs:
+  build-test-and-deploy:
+    runs-on: ubuntu-latest # Usamos un runner de Linux
+    
+    steps:
+      # 1. Clona el código del repositorio
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      # 2. Configura Docker Buildx para la construcción de imágenes
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. Inicia sesión en Docker Hub (Simulación de Push)
+      # En un escenario real, las imágenes se subirían a un registro como Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 4. Configura variables de entorno para QA o Producción
+      - name: Set up Environment
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "Estableciendo ambiente: Producción"
+            echo "ENV_NAME=Production" >> $GITHUB_ENV
+            echo "DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}" >> $GITHUB_ENV
+          else
+            echo "Estableciendo ambiente: QA"
+            echo "ENV_NAME=QA" >> $GITHUB_ENV
+            echo "DB_PASSWORD=${{ secrets.QA_DB_PASSWORD }}" >> $GITHUB_ENV
+          fi
+
+      # 5. Construye las imágenes Docker
+      - name: Construir imágenes Docker
+        run: docker-compose build
+
+      # 6. Levanta los contenedores para las pruebas de integración
+      - name: Levantar contenedores
+        run: docker-compose up -d
+
+      # 7. Ejecuta las pruebas de integración
+      - name: Ejecutar pruebas de integración
+        run: |
+          echo "Esperando que los servicios se estabilicen..."
+          sleep 45 # Damos tiempo extra para que las migraciones y el arranque ocurran
+          
+          echo "Probando conectividad del Frontend en el puerto 5000..."
+          curl -f http://localhost:5000 || exit 1
+          
+          echo "Probando conectividad de la API en el puerto 5001..."
+          curl -f http://localhost:5001/Contenedor || exit 1
+          
+          echo "¡Pruebas de integración exitosas!"
+
+      # 8. Notificación de éxito
+      - name: Notificación de Éxito
+        if: success()
+        run: echo "✅ Workflow para el ambiente ${{ env.ENV_NAME }} completado exitosamente."
+
+      # 9. Rollback simulado y logs en caso de fallo
+      - name: Rollback y Diagnóstico en caso de Fallo
+        if: failure()
+        run: |
+          echo "🚨 ¡El workflow ha fallado! Recopilando logs para diagnóstico..."
+          docker-compose logs
+          echo "Simulando rollback: Limpiando el entorno..."
+          docker-compose down -v
+          exit 1
+          
+      # 10. Limpieza final (siempre se ejecuta)
+      - name: Limpieza final del entorno
+        if: always()
+        run: |
+          echo "Limpiando contenedores y volúmenes..."
+          docker-compose down -v
