@@ -11,10 +11,10 @@ services:
       - db-data:/var/opt/mssql
     healthcheck:
       test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
-      interval: 30s
-      timeout: 20s
-      retries: 25
-      start_period: 300s
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
 
   api:
     build:
@@ -22,34 +22,30 @@ services:
       dockerfile: Dockerfile
     container_name: api_service
     ports:
-      # Expone el puerto del frontend (5000) y el de la API (5001)
-      - "5000:8080"
-      - "5001:7128"
+      - "5001:8080"
     environment:
-      # Forzar a la API a escuchar SOLAMENTE en HTTP en el puerto que el frontend busca
-      - ASPNETCORE_URLS=http://+:7128
+      - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_ENVIRONMENT=Development
-      # --- LA CORRECCIÓN CLAVE PARA EL ERROR DE SSL ---
-      # Activa un modo de compatibilidad de red para evitar la redirección a HTTPS
-      - DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
       - ConnectionStrings__DefaultConnection=Server=db;Database=master;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:7128/Contenedor || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/Contenedor || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 20s
 
   frontend:
     build:
       context: ./Frontend-Contenedores
       dockerfile: Dockerfile
-    # Forzar al frontend a usar la red de la API. 'localhost' ahora apuntará a la API.
-    network_mode: "service:api"
+    container_name: frontend_service
+    ports:
+      - "5000:8080"
     environment:
+      - ApiSettings__BaseUrl=http://api:8080
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       api:
