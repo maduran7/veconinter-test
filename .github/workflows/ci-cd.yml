@@ -55,7 +55,7 @@ jobs:
           echo "Probando conectividad de la API en el puerto 5001..."
           curl -f --retry 5 --retry-delay 5 http://localhost:5001/Contenedor || exit 1
           
-          echo "¡Pruebas de integración exitosas!"
+          echo "Pruebas de integración exitosas"
 
       - name: Notificación de Éxito
         if: success()
